@@ -1,3 +1,4 @@
+# Imports
 import sys
 import pandas as pd
 import sqlite3
@@ -22,6 +23,9 @@ from sklearn.model_selection import GridSearchCV
 import pickle
 
 def load_data(database_filepath):
+    ''' Loads sqlite database and return X (training) and y (target) arrays
+    and associated y category names
+    '''
     engine = create_engine('sqlite:///'+database_filepath)
     df = pd.read_sql_table('disasterdata', engine)
     
@@ -34,6 +38,11 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    ''' Defines tokenizer for the sklearn CountVectorizer feature
+    extraction model which converts a collection of text documents 
+    to a matrix of token (word) counts. Returns list of clean tokens.
+    '''
+    
     # Normalize and lower case text
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
 
@@ -56,6 +65,8 @@ def tokenize(text):
 
 
 def build_model():
+    ''' Defines and returns the pipeline for the classifier model.
+    '''
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
@@ -65,17 +76,25 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    ''' Evaluates the performance of the pipeline model for each target
+    category using the sklearn classification_report function. Also prints
+    the average precision, recall and f1 score for all categories. 
+    '''
+    # Lists for storing the precision, recall and f1 scores
     prec_values, recall_values, f1_values = [], [], []
 
+    # Run prediction using the fitted model
     Y_pred = model.predict(X_test)
     
-    assert Y_pred.shape == Y_test.shape,"Y prediction and test arrays not the same size!"
+    # Insure prediction and test arrays are the same size
+    assert Y_pred.shape == Y_test.shape,"Prediction and test arrays not same size!"
     
     for i in range(0, Y_pred.shape[1]):
         print('-'*40)
         print('CATEGORY = {}'.format(category_names.columns[i]))
         print('-'*40)
-        cls_rpt = classification_report(Y_test[:,i][np.newaxis].T, Y_pred[:,i][np.newaxis].T)
+        cls_rpt = classification_report(Y_test[:,i][np.newaxis].T, 
+                                        Y_pred[:,i][np.newaxis].T)
         print(len(cls_rpt.split()))
         
         # Track metrics for all columns
@@ -88,11 +107,11 @@ def evaluate_model(model, X_test, Y_test, category_names):
         print('Average precision: {:.2f}'.format(np.array(prec_values).mean()))
         print('Average recall: {:.2f}'.format(np.array(recall_values).mean()))
         print('Average f1 values: {:.2f}'.format(np.array(f1_values).mean()))
-    
     return
 
 
 def save_model(model, model_filepath):
+    ''' Save the fitted model '''
     pickle.dump(model, open(model_filepath, 'wb'))
     return
 

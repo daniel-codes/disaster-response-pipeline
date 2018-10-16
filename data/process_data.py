@@ -1,3 +1,4 @@
+# Import Statements
 import sys
 import pandas as pd
 import sqlite3
@@ -5,18 +6,23 @@ from sqlalchemy import create_engine
 import numpy as np
 
 def load_data(messages_filepath, categories_filepath):
-    ''' Loads messages and associated message categories into dataframes.
-    Assumes the input files are csv in format. Merges both into a single
-    DataFrame and returns the merged DataFrame. 
+    ''' Loads messages and associated message categories into DataFrames.
+    Assumes the input files are csv formated. Merges both DataFrames and 
+    returns the merged DataFrame. 
     '''
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = messages.merge(categories, left_on='id', right_on='id', how='inner')
     return df
 
-
 def clean_data(df):
-
+    ''' This function takes a DataFrame with merged message/category columns
+    and performs the following:
+    1. Renames the column names
+    2. Formats the category series as integer 1 or 0
+    3. Removes duplicate rows
+    4. Returns a clean DataFrame
+    '''
     # create a dataframe of the 36 individual category columns
     categories = df['categories'].str.split(';', expand=True)
     row = categories.iloc[0]
@@ -42,14 +48,17 @@ def clean_data(df):
     # concatenate the original dataframe with the new `categories` dataframe
     df = pd.concat([df, categories], axis=1)
     
-    # drop duplicates
+    # drop duplicate rows
     df.drop_duplicates(inplace=True)
     return df
 
 def save_data(df, database_filename):
+    ''' Store cleaned DataFrame in a sqlite database with a name defined by
+    the user (database_filename)
+    '''
     sql_engine = create_engine('sqlite:///' + str(database_filename))
     df.to_sql('disasterdata', sql_engine, index=False, if_exists='replace')
-    pass  
+    return 
 
 
 def main():
