@@ -70,9 +70,24 @@ def build_model():
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
-        ('clf', MultiOutputClassifier(RandomForestClassifier(n_jobs=-1)))
+        ('clf', MultiOutputClassifier(RandomForestClassifier(n_estimators=200, n_jobs=-1)))
     ])
-    return pipeline
+    
+    # Grid CV search parameters 
+    # Note: many other combinations were tested, but runtime is massive
+    # therefore, commenting out prior tested parameters.
+    parameters = {
+    #'vect__max_df': (0.75, 1.0),    
+    #'vect__ngram_range': ((1, 1), (1, 3)),
+    #'vect__max_features': (None, 5000, 10000),
+    #'tfidf__use_idf': (True, False),
+    #'tfidf__norm': ('l1', 'l2', None),
+    #'clf__estimator__n_estimators': [50, 100, 200],
+    'clf__estimator__min_samples_split': [2, 4],
+    }
+
+    cv = GridSearchCV(pipeline, param_grid=parameters, n_jobs=-1, verbose=1)
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
