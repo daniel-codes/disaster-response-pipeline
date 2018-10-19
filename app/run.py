@@ -1,9 +1,18 @@
 import json
 import plotly
 import pandas as pd
+import plotly.plotly as py
+import plotly.graph_objs as go
+import collections
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+import nltk
+import re
+from nltk.corpus import stopwords
+nltk.download('stopwords')
+nltk.download('wordnet')
+nltk.download('punkt')
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -15,12 +24,14 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 def tokenize(text):
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
     tokens = word_tokenize(text)
+    tokens = [w for w in tokens if w not in stopwords.words("english")]
     lemmatizer = WordNetLemmatizer()
 
     clean_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        clean_tok = lemmatizer.lemmatize(tok).strip()
         clean_tokens.append(clean_tok)
 
     return clean_tokens
@@ -43,8 +54,30 @@ def index():
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
     
+    df_cat = df.drop(['id', 'message', 
+                                   'original','genre'], axis=1)
+    category_counts = list(df_cat.sum().values)
+    category_names = list(df_cat.columns)
+    
+    # Count most common words
+    wordcount = {}
+    for text in df.message.sample(1000):
+        for word in tokenize(text):
+            if word not in wordcount:
+                wordcount[word] = 1
+            else:
+                wordcount[word] += 1
+    
+    # Create list of most common words
+    word_list = []
+    word_count_list = []
+    for word, count in collections.Counter(wordcount).most_common(10):
+        word_list.append(word)
+        word_count_list.append(count)
+    
+    
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
+    # TODO: Below is an example - modify to create your own visuals  
     graphs = [
         {
             'data': [
@@ -61,6 +94,39 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_counts
+                )
+            ],
+            
+            'layout': {
+                'title': 'Distribution of Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=word_list,
+                    y=word_count_list
+                )
+            ],
+            
+            'layout': {
+                'title': 'Most common words, randomly selected from 1000 messages',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Word"
                 }
             }
         }

@@ -74,8 +74,9 @@ def build_model():
     ])
     
     # Grid CV search parameters 
-    # Note: many other combinations were tested, but runtime is massive
-    # therefore, commenting out prior tested parameters.
+    # Note: other combinations were tested sequentially due to massive runtime,
+    # therefore, commenting out prior tested parameters. Default values tended 
+    # to give the best results
     parameters = {
     #'vect__max_df': (0.75, 1.0),    
     #'vect__ngram_range': ((1, 1), (1, 3)),
